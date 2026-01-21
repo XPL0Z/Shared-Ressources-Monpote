@@ -46,11 +46,13 @@ etat = false
 vehetat = false
 Ragdoll = false
 noclip = false
+noclip_speed = 1.0
 invisible = false
 seatbealt = false
 radioOff = false
 parachute = false
 engine = false
+wanted = false
 
 save1 = null
 
@@ -60,6 +62,59 @@ function showNotification(msg)
     AddTextComponentString(msg)
     DrawNotification(false, true)
 end
+
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0)
+        if noclip then
+            local ped = PlayerPedId()
+            local x, y, z = table.unpack(GetEntityCoords(ped))
+            local dx, dy, dz = GetCamDirection()
+                                    
+            -- Speed multipliers
+            local speed = noclip_speed
+            if IsControlPressed(0, 21) then speed = speed * 3.0 end -- Left Shift to go faster
+                                    
+            -- Disable controls to prevent walking animations
+            DisableControlAction(0, 30, true) -- Move LR
+            DisableControlAction(0, 31, true) -- Move UD
+
+            if IsControlPressed(0, 32) then -- W
+                x = x + speed * dx
+                y = y + speed * dy
+                z = z + speed * dz
+            end
+            if IsControlPressed(0, 33) then -- S
+                x = x - speed * dx
+                y = y - speed * dy
+                z = z - speed * dz
+            end
+
+            SetEntityCoordsNoOffset(ped, x, y, z, true, true, true)
+        end
+    end
+end)
+
+
+-- Helper function to get the direction the camera is facing
+function GetCamDirection()
+    local heading = GetGameplayCamRelativeHeading() + GetEntityHeading(PlayerPedId())
+    local pitch = GetGameplayCamRelativePitch()
+                                
+    local x = -math.sin(heading * math.pi / 180.0)
+    local y = math.cos(heading * math.pi / 180.0)
+    local z = math.sin(pitch * math.pi / 180.0)
+                                
+    -- Normalize the vector
+        local len = math.sqrt(x * x + y * y + z * z)
+        if len ~= 0 then
+            x = x / len
+            y = y / len
+            z = z / len
+        end
+                            
+    return x, y, z
+end 
 
 function menu()
     local menuTest = RageUI.CreateMenu("Monpote's Mode menu", "Trop BG")
@@ -110,83 +165,19 @@ function menu()
             RageUI.Checkbox("Noclip", nil, noclip, {}, function(Hovered, Active, Selected, Checked)
                 if Selected then
                     noclip = Checked
-                    local playerPed = PlayerPedId()
-                    local isInVehicle = IsPedInAnyVehicle(playerPed, false)
-                    local vehicle = nil
-                    local speed = 2.0
-
-                    if isInVehicle then
-                        vehicle = GetVehiclePedIsIn(playerPed, false)
-                    end
-
-                    if noclip == true then
-                        SetEntityCollision(playerPed, false, true)
-                        SetEntityInvincible(playerPed, true)
-                        if isInVehicle then
-                            SetEntityCollision(vehicle, false, false)
-                            SetEntityInvincible(vehicle, true)
-                        end
-                        print("NOCLIP ON")
-                    else
-                        SetEntityCollision(playerPed, true, true)
-                        SetEntityInvincible(playerPed, false)
-                        if isInVehicle then
-                            SetEntityCollision(vehicle, true, true)
-                            SetEntityInvincible(vehicle, false)
-                        end
-                        print("NOCLIP OFF")
-                    end
-                end
-            end)
-            local speed = 0.005
-            Citizen.CreateThread(function()
-                while true do
-                    Citizen.Wait(0)
+                    local ped = PlayerPedId()
                     if noclip then
-                        local playerPed = PlayerPedId()
-                        local coords = GetEntityCoords(playerPed)
-                        local camCoords = GetGameplayCamCoord()
-                        local direction = GetCamRot(camCoords, 2)
-                        local isControlPressed = false
-
-                        if IsControlPressed(0, 32) then
-                            local directionVector = GetDirectionFromRotation(direction) * speed
-                            coords = vector3(coords.x + directionVector.x, coords.y + directionVector.y, coords.z + directionVector.z)
-                            isControlPressed = true
-                        end
-                        if IsControlPressed(0, 33) then
-                            local directionVector = GetDirectionFromRotation(direction) * speed
-                            coords = vector3(coords.x - directionVector.x, coords.y - directionVector.y, coords.z - directionVector.z)
-                            isControlPressed = true
-                        end
-                        if IsControlPressed(0, 34) then -- Gauche
-                            local directionVector = GetDirectionFromRotation(direction) * speed
-                            coords = vector3(coords.x - directionVector.y, coords.y + directionVector.x, coords.z)
-                            isControlPressed = true
-                        end
-                        if IsControlPressed(0, 35) then -- Droite
-                            local directionVector = GetDirectionFromRotation(direction) * speed
-                            coords = vector3(coords.x + directionVector.y, coords.y - directionVector.x, coords.z)
-                            isControlPressed = true
-                        end
-                        if IsControlPressed(0, 22) then
-                            coords = vector3(coords.x, coords.y, coords.z + speed)
-                            isControlPressed = true
-                        end
-                        if IsControlPressed(0, 36) then
-                            coords = vector3(coords.x, coords.y, coords.z - speed)
-                            isControlPressed = true
-                        end
-                        if isControlPressed then
-                            SetEntityCoordsNoOffset(playerPed, coords, true, true, true)
-                        end
+                        SetEntityInvincible(ped, true)
+                        SetEntityAlpha(PlayerPedId(), 51, false)
+                        SetEntityCollision(ped, false, false)
+                    else
+                        SetEntityInvincible(ped, false)
+                        SetEntityAlpha(PlayerPedId(), 255, false)
+                        SetEntityCollision(ped, true, true)
                     end
                 end
             end)
-            function GetDirectionFromRotation(rotation)
-                local adjustedRotation = (math.pi / 180.0) * rotation
-                return vector3(-math.sin(adjustedRotation.z) * math.abs(math.cos(adjustedRotation.x)), math.cos(adjustedRotation.z) * math.abs(math.cos(adjustedRotation.x)), math.sin(adjustedRotation.x))
-            end
+           
             RageUI.Checkbox("No Ragdoll", nil, Ragdoll, {}, function(Hovered, Active, Selected, Checked)
                 if Selected then
                     Ragdoll = Checked
@@ -197,6 +188,29 @@ function menu()
                     end
                 end
             end)
+
+            RageUI.Checkbox("No Wanted",nil,wanted, {}, function(Hovered, Active, Selected, Checked)
+                if Selected then
+                    wanted = Checked
+                    if wanted == true then
+                        SetPoliceIgnorePlayer(PlayerPedId(), true)
+                        print("on")
+                    else
+                        SetPoliceIgnorePlayer(PlayerPedId(), false)
+                        print("off")
+                    end
+                end
+            end)
+
+            RageUI.ButtonWithStyle("boost",nil, {RightLabel = "~r~BOOST"}, true, function(Hovered, Active, Selected)
+                if Selected then
+                    print(GetEntitySpeed(GetVehiclePedIsIn(PlayerPedId(), false), false))
+                    SetVehicleForwardSpeed(GetVehiclePedIsIn(PlayerPedId(), false), -50)
+                end
+            end)
+
+
+
             RageUI.Checkbox("invisible", nil, invisible, {}, function(Hovered, Active, Selected, Checked)
                 if Selected then
                     invisible = Checked
@@ -301,6 +315,15 @@ function veh()
                     DeleteEntity(GetVehiclePedIsIn(PlayerPedId(),false))
                     local vehicle = CreateVehicle("bf400", pos.x, pos.y, pos.z, GetEntityHeading(ped), true, false)
                     TaskWarpPedIntoVehicle(ped, vehicle, -1)
+                end
+            end)
+
+            RageUI.ButtonWithStyle("MOD Vehicle", nil, {RightLabel = "→"}, true, function(Hovered, Active, Selected)
+                if Selected then
+                    SetVehicleMod(GetVehiclePedIsIn(PlayerPedId(),false), 11, 1000, false)
+                    SetVehicleMod(GetVehiclePedIsIn(PlayerPedId(),false), 12, 999999, false)
+                    SetVehicleModKit(GetVehiclePedIsIn(PlayerPedId(),false), 0)
+                    StartScreenEffect("RaceTurbo", 0, 0)
                 end
             end)
 
@@ -480,15 +503,16 @@ function tpsave()
         RageUI.IsVisible(tpsave, true, true, true, function()
             RageUI.ButtonWithStyle("save coords 1", nil, {RightLabel = "→"}, true, function(Hovered, Active, Selected)
                 if Selected then
-                    coords = GetEntityCoords(PlayerPedId(), false)
+                    local coords = GetEntityCoords(PlayerPedId(), false)
+                    save1 = int(tostring(coords.x) .. ", " .. tostring(coords.y) .. ", " .. tostring(coords.z))
                     showNotification("Saved")
                     print(coords)
                 end
             end)
 
             RageUI.ButtonWithStyle("Tp saved coords 1",nil,{RightLabel = "→"},true,function(Hovered,Active,Selected)
-                if Selected then     
-                    SetPedCoordsKeepVehicle(PlayerPedId(), coords.x, coords.y, coords.z)
+                if Selected then
+                    SetPedCoordsKeepVehicle(PlayerPedId(), save1)
                     print(save1)
                     showNotification("~g~Tped To the save Location")    
                 end
