@@ -1,0 +1,11 @@
+{
+    "Lua.diagnostics.disable": [
+        "missing-parameter",
+        "param-type-mismatch",
+        "undefined-global",
+        "redundant-parameter"
+    ],
+    "Lua.diagnostics.globals": [
+        "playerPed"
+    ]
+}

@@ -1,0 +1,8 @@
+cache/
+server-cache/
+server-cache-priv/
+crash-dumps/
+.replxx_history
+*.log
+node_modules/
+db/
