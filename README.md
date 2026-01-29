@@ -13,7 +13,7 @@ Don't Forget tu ensure it:
 - GodMode
 - Noclip
 - No Ragdoll
-- Not Wanted (WIP)
+- Not Wanted
 - boost (WIP)
 - invisibility
 ### Vehicle:

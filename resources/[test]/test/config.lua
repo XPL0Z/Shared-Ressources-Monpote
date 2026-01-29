@@ -192,13 +192,6 @@ function menu()
             RageUI.Checkbox("No Wanted",nil,wanted, {}, function(Hovered, Active, Selected, Checked)
                 if Selected then
                     wanted = Checked
-                    if wanted == true then
-                        SetPoliceIgnorePlayer(PlayerPedId(), true)
-                        print("on")
-                    else
-                        SetPoliceIgnorePlayer(PlayerPedId(), false)
-                        print("off")
-                    end
                 end
             end)
 
@@ -245,6 +238,18 @@ Citizen.CreateThread(function()
                 local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
                 SetVehRadioStation(vehicle, "OFF")
             end
+        end
+    end
+end)
+
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0)
+        if wanted == true then
+            Citizen.Wait(1000) -- optimisation parce que jsp pk mon menu commence à lag au bout d'un moment :()
+            SetPlayerWantedLevel(PlayerId(), 0, false)
+            SetPlayerWantedLevelNow(PlayerId(), false)
+            SetPlayerWantedLevelNoDrop(PlayerId(), 0, false)
         end
     end
 end)
